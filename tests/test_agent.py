@@ -27,7 +27,8 @@ def test_agent_think_act_loop(mock_agent):
         mock_think.assert_called_once_with(task)
         
         # Verify memory was updated
-        assert mock_agent.memory.add_entry.call_count == 2 # User task + Assistant response
+        # 3 calls: User task + Thinking Process + Final Answer
+        assert mock_agent.memory.add_entry.call_count == 3
         
         # Verify response format
         assert "I have completed the task" in response

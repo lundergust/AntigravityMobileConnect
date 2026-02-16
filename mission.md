@@ -1,14 +1,15 @@
 # Agent Mission
 
-**Objective:** Build a stock analysis agent.
+**Objective:** Build a mobile controller for Google Antigravity IDE 
 
 ## Description
-This agent should be able to take a stock ticker symbol (e.g., "GOOGL", "AAPL") and provide a comprehensive analysis including:
-1.  Current price and recent performance.
-2.  Latest news headlines related to the company.
-3.  A summary of analyst ratings.
+This web app should be a controller for Google Antigravity IDE. It should be able to:
+1.  View and send chats to control agents
+2.  View artifacts and files
+3.  Switch repositories and git branchs
+4.  See model quotas
+5.  See active agents and their status
 
 ## Success Criteria
-- The agent can successfully retrieve real-time data.
-- The output is a concise, readable report.
-- The agent handles invalid tickers gracefully.
+- The user has full control of antigravity agents from mobile device
+
