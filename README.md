@@ -1,95 +1,139 @@
-# 🪐 Google Antigravity Workspace Template (Enterprise Edition)
+# 🪐 Antigravity Mobile Connect
 
-![Gemini 3](https://img.shields.io/badge/AI-Gemini%203-blue)
-![Agentic Workflow](https://img.shields.io/badge/Workflow-Agentic-purple)
-![Antigravity](https://img.shields.io/badge/IDE-Antigravity-orange)
-![Docker](https://img.shields.io/badge/Docker-Ready-blue)
-![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-green)
+> **Mobile-first command center for your Antigravity Agent.**
+> Control your agent, manage tasks, and monitor quotas from anywhere via a secure mobile web interface.
 
-Welcome to the **Antigravity Workspace Template**. This is a production-grade starter kit for building autonomous agents on the Google Antigravity platform.
+![License](https://img.shields.io/badge/License-MIT-green)
+![Status](https://img.shields.io/badge/Status-Beta-orange)
+![Stack](https://img.shields.io/badge/Stack-FastAPI%20%2B%20React%20%2B%20Vite-blue)
+![Powered By](https://img.shields.io/badge/Powered%20By-Antigravity%20Template-purple)
 
-## 🧠 How It Works
+## 📱 What is this?
 
-The agent follows a strict "Think-Act-Reflect" loop, simulating the cognitive process of Gemini 3.
+**Antigravity Mobile Connect** is a companion app that runs alongside your Antigravity Agent on your desktop. It bridges the gap between your powerful desktop agent and your mobile device, allowing you to:
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant Agent as 🤖 GeminiAgent
-    participant Memory as 🧠 Memory
-    participant Tools as 🛠️ Tools
+-   **Chat & Command**: Talk to your agent via a mobile-optimized interface.
+-   **Deploy Swarms**: Launch complex multi-agent tasks on the go.
+-   **Monitor Usage**: Keep track of token usage and quotas with cockpit-style gauges.
+-   **Review History**: Browse and manage past conversations.
 
-    User->>Agent: "Analyze stock GOOGL"
-    activate Agent
-    
-    Agent->>Memory: Add User Task
-    
-    Note over Agent: <thought> Deep Think Process </thought>
-    Agent->>Agent: Formulate Plan
-    
-    Agent->>Tools: Execute Tool (web_search)
-    activate Tools
-    Tools-->>Agent: Search Results
-    deactivate Tools
-    
-    Agent->>Memory: Store Interaction
-    
-    Agent-->>User: Final Report
-    deactivate Agent
-    
-    Agent->>Agent: Reflect & Optimize
+It consists of a **FastAPI bridge server** and a **React/Vite frontend**, connected via secure tunnels (ngrok or Tailscale) or local Wi-Fi.
+
+---
+
+## 🏗️ Architecture & Origins
+
+This project is built on top of the **[Antigravity Workspace Template](https://github.com/study8677/antigravity-workspace-template)**.
+
+While **Mobile Connect** provides the frontend interface, the **backend agent** retains all the powerful capabilities of the original template:
+
+| Feature | Description |
+| :--- | :--- |
+| 🧠 **Infinite Memory** | Recursive summarization compresses context automatically. |
+| 🛠️ **Universal Tools** | Drop Python functions in `src/tools/` → auto-discovered. |
+| 🔌 **MCP Support** | Connect to GitHub, databases, and custom servers via Model Context Protocol. |
+| 🤖 **Swarm Agents** | Multi-agent orchestration with Router-Worker pattern. |
+| 📚 **Auto Context** | Add files to `.context/` → auto-injected into prompts. |
+
+For deep dives into the agent architecture, see the core documentation:
+-   **[Philosophy](docs/en/PHILOSOPHY.md)** — Core concepts & architecture
+-   **[MCP Integration](docs/en/MCP_INTEGRATION.md)** — External tool connectivity
+-   **[Swarm Protocol](docs/en/SWARM_PROTOCOL.md)** — Multi-agent coordination
+
+---
+
+## ⚡ Quick Start
+
+### Prerequisites
+
+-   **Python 3.11+**
+-   **Node.js 18+**
+-   An existing **Antigravity Workspace** (with `.env` configured).
+
+### 1. Installation
+
+Install backend and frontend dependencies:
+
+```bash
+# Backend
+pip install -r requirements.txt
+
+# Frontend
+cd mobile-ui
+npm install
+cd ..
 ```
 
-## ✨ Key Features
+### 2. Build
 
-- **Auto-Configuration**: `.cursorrules` loads the "Google Antigravity Expert" persona.
-- **Modular Architecture**: Logic separated into `src/` (Agent, Memory, Config).
-- **DevOps Ready**: Includes `Dockerfile`, `docker-compose.yml`, and CI/CD workflows.
-- **Type-Safe**: Built with `pydantic` and strict type hints.
+Build the mobile UI for production:
 
-## 🚀 Quick Start
+```bash
+cd mobile-ui
+npm run build
+cd ..
+```
 
-### Local Development
-1.  **Install Dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
-2.  **Run the Agent**:
-    ```bash
-    python src/agent.py
-    ```
+### 3. Launch
 
-### Docker Deployment
-1.  **Build & Run**:
-    ```bash
-    docker-compose up --build
-    ```
+Start the bridge server. This will serve the built UI and provide a QR code for easy connection.
+
+```bash
+# Standard Launch (Local + Tailscale auto-detect)
+python start.py
+
+# Launch with ngrok tunnel (recommended for remote access)
+python start.py --ngrok
+
+# Developer Mode (Hot Module Replacement + API Server)
+python start.py --dev
+```
+
+### 4. Connect
+
+Scan the **QR code** printed in your terminal with your phone. No app installation required—it works directly in your mobile browser.
+
+---
+
+## ✨ Features
+
+| Feature | Description |
+| :--- | :--- |
+| **💬 Real-time Chat** | Low-latency WebSocket connection to your agent. |
+| **📜 History** | Auto-saves conversations. Browse, search, and delete old chats. |
+| **🤖 Agent Discovery** | Auto-detects available agents in your workspace. |
+| **🚀 Swarm Control** | Deploy agent swarms for complex tasks directly from the UI. |
+| **📊 Quota Cockpit** | Visual dashboard for model limits and token usage (Coming Soon). |
+| **🔌 Auto-Connectivity** | Smart detection of Local LAN, Tailscale, and ngrok tunnels. |
+
+---
+
+## 🛠️ Configuration
+
+Configuration is handled via command-line arguments and your existing `.env` file.
+
+| Argument | Description | Default |
+| :--- | :--- | :--- |
+| `--port` | Server port | `8000` |
+| `--host` | Bind address | `0.0.0.0` |
+| `--dev` | Enable Vite dev server proxy | `False` |
+| `--ngrok` | Force remote tunnel creation | `False` |
+
+---
 
 ## 🗺️ Roadmap
 
-- [x] **Phase 1: Foundation** (Scaffold, Config, Memory)
-- [x] **Phase 2: DevOps** (Docker, CI/CD)
-- [ ] **Phase 3: Advanced Memory** (Vector Database Integration)
-- [ ] **Phase 4: Multi-Agent Orchestration** (Swarm Protocol)
-- [ ] **Phase 5: Dashboard** (Streamlit UI for Agent Monitoring)
-
-## 📂 Project Structure
-
-```
-.
-├── .context/           # AI Knowledge Base
-├── .github/            # CI/CD Workflows
-├── src/                # Source Code
-│   ├── agent.py        # Main Agent Logic
-│   ├── config.py       # Settings Management
-│   ├── memory.py       # JSON Memory Manager
-│   └── tools/          # Agent Tools
-├── tests/              # Test Suite
-├── .cursorrules        # AI Persona Config
-├── Dockerfile          # Production Build
-├── docker-compose.yml  # Local Dev Setup
-└── mission.md          # Agent Objective
-```
+-   [x] **Phase 0**: Core Connectivity & UI Shell
+-   [ ] **Phase 1**: Real-time Streaming Responses
+-   [ ] **Phase 2**: Live Workspace & Model Switching
+-   [ ] **Phase 3**: Advanced Chat History Management
+-   [ ] **Phase 4**: Agent Deployment UI
+-   [ ] **Phase 5**: Real Metrics Integration
 
 ---
-*Generated by Google Antigravity*
+
+## 🤝 Contributing
+
+Contributions are welcome! Please check out the `docs/` folder for architectural details or open an issue.
+
+**License**: MIT

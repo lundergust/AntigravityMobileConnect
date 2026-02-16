@@ -1,43 +1,41 @@
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+
+# Node.js
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vite/
+
 # Python
+venv/
+.venv/
+env/
+antigravmobile/Lib/
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+.pytest_cache/
+.coverage
+.cache/
 
-# Virtual Environments
-venv/
-env/
-ENV/
-.env
-.venv
-env.bak/
-venv.bak/
-
-# Antigravity / IDE
-.antigravity/
-.idea/
-.vscode/
-*.swp
-
-# Project specific
+# Antigravity specific
+.gemini/antigravity/brain/*/task.md
+.gemini/antigravity/brain/*/implementation_plan.md
+.gemini/antigravity/brain/*/walkthrough.md
+agent_memory.json
 logs/
-data/
-.opencode/
+*.log
+
+# Mobile UI specific
+mobile-ui/node_modules/
+mobile-ui/dist/
+mobile-ui/.env

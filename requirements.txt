@@ -3,3 +3,16 @@ pydantic
 pydantic-settings
 python-dotenv
 pytest
+requests
+
+# MCP (Model Context Protocol) Integration
+# Install with: pip install 'mcp[cli]'
+# Or for just the core library: pip install mcp
+mcp[cli]>=1.0.0
+
+# Mobile Connect Bridge Server
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+websockets>=14.0
+qrcode[pil]>=8.0
+pyngrok>=7.0
