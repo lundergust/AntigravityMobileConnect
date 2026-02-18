@@ -13,32 +13,20 @@
 **Antigravity Mobile Connect** is a companion app that runs alongside your Antigravity Agent on your desktop. It bridges the gap between your powerful desktop agent and your mobile device, allowing you to:
 
 -   **Chat & Command**: Talk to your agent via a mobile-optimized interface.
--   **Deploy Swarms**: Launch complex multi-agent tasks on the go.
--   **Monitor Usage**: Keep track of token usage and quotas with cockpit-style gauges.
+-   **CDP Mirroring**: Automatically mirror your desktop session (no API key required).
 -   **Review History**: Browse and manage past conversations.
+-   **Monitor Usage**: Keep track of token usage and quotas (Coming Soon).
 
 It consists of a **FastAPI bridge server** and a **React/Vite frontend**, connected via secure tunnels (ngrok or Tailscale) or local Wi-Fi.
 
 ---
 
-## 🏗️ Architecture & Origins
+## 🏗️ Architecture & Documentation
 
-This project is built on top of the **[Antigravity Workspace Template](https://github.com/study8677/antigravity-workspace-template)**.
+For deep dives into how this works, see the new documentation artifacts:
 
-While **Mobile Connect** provides the frontend interface, the **backend agent** retains all the powerful capabilities of the original template:
-
-| Feature | Description |
-| :--- | :--- |
-| 🧠 **Infinite Memory** | Recursive summarization compresses context automatically. |
-| 🛠️ **Universal Tools** | Drop Python functions in `src/tools/` → auto-discovered. |
-| 🔌 **MCP Support** | Connect to GitHub, databases, and custom servers via Model Context Protocol. |
-| 🤖 **Swarm Agents** | Multi-agent orchestration with Router-Worker pattern. |
-| 📚 **Auto Context** | Add files to `.context/` → auto-injected into prompts. |
-
-For deep dives into the agent architecture, see the core documentation:
--   **[Philosophy](docs/en/PHILOSOPHY.md)** — Core concepts & architecture
--   **[MCP Integration](docs/en/MCP_INTEGRATION.md)** — External tool connectivity
--   **[Swarm Protocol](docs/en/SWARM_PROTOCOL.md)** — Multi-agent coordination
+-   **[Architecture Overview](artifacts/architecture.md)** — System design, components, and data flow.
+-   **[Implementation Plan](artifacts/antigravity_mobile_connect_implementation_plan.md)** — Detailed roadmap and change log.
 
 ---
 
@@ -79,10 +67,10 @@ cd ..
 Start the bridge server. This will serve the built UI and provide a QR code for easy connection.
 
 ```bash
-# Standard Launch (Local + Tailscale auto-detect)
+# Standard Launch (Local + Tailscale + CDP Mirror)
 python start.py
 
-# Launch with ngrok tunnel (recommended for remote access)
+# Launch with ngrok public tunnel (recommended for remote access)
 python start.py --ngrok
 
 # Developer Mode (Hot Module Replacement + API Server)
@@ -97,15 +85,14 @@ Scan the **QR code** printed in your terminal with your phone. No app installati
 
 ## ✨ Features
 
-| Feature | Description |
-| :--- | :--- |
-| **💬 Real-time Chat** | Low-latency WebSocket connection to your agent. |
-| **🖥️ CDP Mirroring** | **NEW:** Mirrors your desktop Antigravity session (via Chrome DevTools Protocol) without requiring an API key. |
-| **📜 History** | Auto-saves conversations. Browse, search, and delete old chats. |
-| **🤖 Agent Discovery** | Auto-detects available agents in your workspace. |
-| **🚀 Swarm Control** | Deploy agent swarms for complex tasks directly from the UI. |
-| **📊 Quota Cockpit** | Visual dashboard for model limits and token usage (Coming Soon). |
-| **🔌 Auto-Connectivity** | Smart detection of Local LAN, Tailscale, and ngrok tunnels. |
+| Feature | Description | Status |
+| :--- | :--- | :--- |
+| **💬 Real-time Chat** | Low-latency WebSocket connection to your agent. | ✅ Live |
+| **🖥️ CDP Mirroring** | **Mirrors your desktop Antigravity session** (via Chrome DevTools Protocol) without requiring an API key. | ✅ Live |
+| **📜 History** | Auto-saves conversations. Browse past chats. | 🚧 In Progress |
+| **🤖 Agent Discovery** | Auto-detects available agents in your workspace. | 🚧 In Progress |
+| **🚀 Swarm Control** | Deploy agent swarms for complex tasks. | 📅 Planned |
+| **🔌 Auto-Connect** | Smart detection of Local LAN, Tailscale, and ngrok tunnels. | ✅ Live |
 
 ---
 
@@ -119,23 +106,6 @@ Configuration is handled via command-line arguments and your existing `.env` fil
 | `--host` | Bind address | `0.0.0.0` |
 | `--dev` | Enable Vite dev server proxy | `False` |
 | `--ngrok` | Force remote tunnel creation | `False` |
-
----
-
-## 🗺️ Roadmap
-
--   [x] **Phase 0**: Core Connectivity & UI Shell
--   [x] **Phase 1**: Real-time Streaming Chat (Core functionality working, UI polish ongoing)
--   [x] **Phase 1.5**: CDP Mirroring (No-API-Key Mode)
--   [ ] **Phase 2**: Live Workspace & Model Switching
--   [ ] **Phase 3**: Advanced Chat History Management
--   [ ] **Phase 4**: Agent Deployment UI
--   [ ] **Phase 5**: Real Metrics Integration
-
-### Known Issues
--   Mobile Safari/Chrome: Chat scroll position on load may act erratically.
--   Mobile Viewport: Zoom disable may not be respected on all devices.
--   Mobile Layout: Message toolbar may float on some screens.
 
 ---
 

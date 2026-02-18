@@ -32,10 +32,11 @@ __pycache__/
 .gemini/antigravity/brain/*/implementation_plan.md
 .gemini/antigravity/brain/*/walkthrough.md
 agent_memory.json
+artifacts/chat_history/*.json
 logs/
 *.log
 
-# Mobile UI specific
+# Mobile UI spe_c
 mobile-ui/node_modules/
 mobile-ui/dist/
 mobile-ui/.env
