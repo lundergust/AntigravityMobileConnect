@@ -1,33 +1,43 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useApi } from '../hooks/useApi';
+import { ChatView, type ChatMessage } from '../components/ChatView';
+import CommandBar from '../components/CommandBar';
+import ReviewChanges from '../components/ReviewChanges';
+import ArtifactViewer, { extractArtifacts } from '../components/ArtifactViewer';
 
-interface Message {
-    role: 'user' | 'assistant';
-    content: string;
-}
+type TabId = 'chat' | 'changes' | 'terminal' | 'artifacts';
 
 interface ChatPageProps {
-    loadedMessages?: Message[];
+    loadedMessages?: ChatMessage[];
     loadedTitle?: string;
     onClearLoaded?: () => void;
     onNewChat?: () => void;
 }
 
 /**
- * Main chat page — send messages and view streaming responses.
- * Auto-saves current conversation to history on "New Chat".
+ * Main chat page — composes ChatView, CommandBar, ReviewChanges, and ArtifactViewer.
+ * Handles WebSocket streaming, tab switching, and chat session management.
  */
-export default function ChatPage({ loadedMessages, loadedTitle, onClearLoaded, onNewChat }: ChatPageProps) {
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [input, setInput] = useState('');
+export default function ChatPage({ loadedMessages, loadedTitle, onClearLoaded }: ChatPageProps) {
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [streamingContent, setStreamingContent] = useState(''); // New separate state for active stream
     const [expandAll, setExpandAll] = useState(false);
     const [actionMode, setActionMode] = useState('ask');
     const [chatTitle, setChatTitle] = useState('');
     const [saving, setSaving] = useState(false);
-    const messagesEnd = useRef<HTMLDivElement>(null);
-    const { isConnected, lastMessage } = useWebSocket();
+    const [activeTab, setActiveTab] = useState<TabId>('chat');
+
+    // Refs for buffering
+    const streamBuffer = useRef<string>('');
+    const streamMsgId = useRef<string | null>(null);
+
+    const { isConnected, lastMessage, isStreaming, sendChatMessage, sendAction } = useWebSocket();
     const api = useApi();
+
+    // Extract artifacts from assistant messages
+    // Type coercion needed as ArtifactViewer expects slightly different shape
+    const chatArtifacts = useMemo(() => extractArtifacts(messages as any[]), [messages]);
 
     // Load messages from history when provided
     useEffect(() => {
@@ -37,48 +47,87 @@ export default function ChatPage({ loadedMessages, loadedTitle, onClearLoaded, o
         }
     }, [loadedMessages, loadedTitle]);
 
-    // Handle incoming WebSocket messages
+    // Handle incoming WebSocket messages for streaming
     useEffect(() => {
-        if (lastMessage?.type === 'chat_response' && lastMessage.data) {
-            const data = lastMessage.data as Message;
-            setMessages(prev => [...prev, data]);
+        if (!lastMessage) return;
+
+        switch (lastMessage.type) {
+            case 'stream_start':
+                streamBuffer.current = '';
+                streamMsgId.current = lastMessage.message_id || null;
+                setStreamingContent(''); // Clear previous stream
+                // DO NOT add placeholder to 'messages' yet.
+                // ChatView will combine 'messages' + 'streamingContent'.
+                break;
+
+            case 'stream_chunk':
+                if (lastMessage.chunk) {
+                    streamBuffer.current += lastMessage.chunk;
+                    setStreamingContent(streamBuffer.current); // Update local stream state
+                }
+                break;
+
+            case 'stream_end':
+                if (streamMsgId.current) {
+                    const finalContent = lastMessage.content as string || streamBuffer.current;
+                    const finalId = streamMsgId.current;
+
+                    // Now commit the finished message to history
+                    setMessages(prev => [
+                        ...prev,
+                        {
+                            id: finalId,
+                            role: 'assistant',
+                            content: finalContent,
+                            isStreaming: false
+                        }
+                    ]);
+
+                    // Reset stream state
+                    setStreamingContent('');
+                    streamBuffer.current = '';
+                    streamMsgId.current = null;
+                }
+                break;
+
+            // Legacy support for Phase 0 non-streaming responses
+            case 'chat_response':
+                if (lastMessage.data) {
+                    const data = lastMessage.data as ChatMessage;
+                    setMessages(prev => [...prev, { ...data, id: data.id || `legacy-${Date.now()}` }]);
+                }
+                break;
+
+            case 'action_result':
+                // Could show a toast or notification here
+                break;
+
+            // CDP snapshot — replace messages with desktop Antigravity state
+            case 'snapshot_update':
+                if (lastMessage.messages && lastMessage.messages.length > 0) {
+                    setMessages(lastMessage.messages.map(m => ({
+                        ...m,
+                        role: m.role as 'user' | 'assistant',
+                        isStreaming: false,
+                    })));
+                }
+                break;
         }
     }, [lastMessage]);
 
-    // Auto-scroll to bottom
-    useEffect(() => {
-        messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    const handleSend = useCallback(async (message: string) => {
+        const msgId = `user-${Date.now().toString(36)}`;
+        setMessages(prev => [...prev, { id: msgId, role: 'user', content: message }]);
 
-    const handleSend = async () => {
-        if (!input.trim()) return;
-        const userMsg: Message = { role: 'user', content: input };
-        setMessages(prev => [...prev, userMsg]);
-        setInput('');
+        // Use WebSocket for streaming response
+        sendChatMessage(message);
+    }, [sendChatMessage]);
 
-        try {
-            const res = await api.post<Message>('/chat/send', { message: input });
-            setMessages(prev => [...prev, res]);
-        } catch {
-            setMessages(prev => [
-                ...prev,
-                { role: 'assistant', content: '⚠️ Failed to reach the agent. Check connection.' },
-            ]);
-        }
-    };
+    const handleAction = useCallback((action: string, params?: Record<string, unknown>) => {
+        sendAction(action, params);
+    }, [sendAction]);
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-        }
-    };
-
-    /**
-     * Start a new chat — auto-saves the current conversation first.
-     */
     const handleNewChat = useCallback(async () => {
-        // Save current messages to history if there are any
         if (messages.length > 0) {
             setSaving(true);
             try {
@@ -89,148 +138,83 @@ export default function ChatPage({ loadedMessages, loadedTitle, onClearLoaded, o
                 setSaving(false);
             }
         }
-
-        // Clear state
         setMessages([]);
         setChatTitle('');
-        setInput('');
+        setActiveTab('chat');
         if (onClearLoaded) onClearLoaded();
-        if (onNewChat) onNewChat();
-    }, [messages, api, onClearLoaded, onNewChat]);
+    }, [messages, api, onClearLoaded]);
+
+    const handleOpenArtifact = useCallback(() => {
+        setActiveTab('artifacts');
+    }, []);
+
+    const TABS: { id: TabId; icon: string; label: string }[] = [
+        { id: 'chat', icon: '💬', label: 'Chat' },
+        { id: 'changes', icon: '📄', label: 'Changes' },
+        { id: 'terminal', icon: '💻', label: 'Terminal' },
+        { id: 'artifacts', icon: '📦', label: 'Artifacts' },
+    ];
 
     return (
         <div className="chat-container">
-            {/* Chat Header — always-visible New Chat button */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: 'var(--space-xs) var(--space-md)',
-                background: 'var(--bg-card)',
-                borderBottom: '1px solid var(--border-subtle)',
-            }}>
-                <span style={{
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    color: chatTitle ? 'var(--accent-secondary)' : 'var(--text-secondary)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    flex: 1,
-                }}>
+            {/* Chat Header */}
+            <div className="chat-header">
+                <span className="chat-header__title">
                     {chatTitle ? `📜 ${chatTitle}` : '💬 Current Chat'}
                 </span>
                 <button
                     className="btn btn--primary btn--sm"
                     onClick={handleNewChat}
                     disabled={saving}
-                    style={{
-                        fontSize: '0.75rem',
-                        flexShrink: 0,
-                    }}
+                    style={{ fontSize: '0.75rem', flexShrink: 0 }}
                 >
                     {saving ? '💾 Saving...' : '✨ New Chat'}
                 </button>
             </div>
 
             {/* Tab Menu */}
-            <div style={{
-                display: 'flex',
-                gap: 'var(--space-xs)',
-                padding: 'var(--space-sm) var(--space-md)',
-                background: 'var(--bg-secondary)',
-                borderBottom: '1px solid var(--border-subtle)',
-            }}>
-                <button className="btn btn--ghost btn--sm" style={{ flex: 1 }}>📄 Changes</button>
-                <button className="btn btn--ghost btn--sm" style={{ flex: 1 }}>💻 Terminal</button>
-                <button className="btn btn--ghost btn--sm" style={{ flex: 1 }}>📦 Artifacts</button>
-            </div>
-
-            {/* Action Bar */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--space-sm)',
-                padding: 'var(--space-xs) var(--space-md)',
-                background: 'var(--bg-elevated)',
-                borderBottom: '1px solid var(--border-subtle)',
-                flexWrap: 'wrap',
-            }}>
-                <button
-                    className="btn btn--sm btn--ghost"
-                    onClick={() => setExpandAll(!expandAll)}
-                    style={{ fontSize: '0.75rem' }}
-                >
-                    {expandAll ? '🔽 Collapse All' : '▶️ Expand All'}
-                </button>
-
-                <select
-                    className="selector"
-                    style={{ width: 'auto', fontSize: '0.75rem', padding: '4px 28px 4px 8px' }}
-                    value={actionMode}
-                    onChange={e => setActionMode(e.target.value)}
-                >
-                    <option value="ask">⏸️ Always Prompt</option>
-                    <option value="proceed">▶️ Always Proceed</option>
-                </select>
-
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: 'var(--space-xs)' }}>
-                    <button className="btn btn--sm btn--success">▶ Run</button>
-                    <button className="btn btn--sm btn--danger">✕ Reject</button>
-                    <select
-                        className="selector"
-                        style={{ width: 'auto', fontSize: '0.75rem', padding: '4px 28px 4px 8px' }}
+            <div className="tab-menu">
+                {TABS.map(tab => (
+                    <button
+                        key={tab.id}
+                        className={`tab-menu__item ${activeTab === tab.id ? 'tab-menu__item--active' : ''}`}
+                        onClick={() => setActiveTab(tab.id)}
                     >
-                        <option>Ask every time</option>
-                        <option>Run automatically</option>
-                        <option>Reject automatically</option>
-                    </select>
-                </div>
+                        <span className="tab-menu__icon">{tab.icon}</span>
+                        <span>{tab.label}</span>
+                    </button>
+                ))}
             </div>
 
-            {/* Messages */}
-            <div className="chat-messages">
-                {messages.length === 0 && (
-                    <div style={{
-                        textAlign: 'center',
-                        padding: 'var(--space-2xl)',
-                        color: 'var(--text-muted)',
-                    }}>
-                        <div style={{ fontSize: '3rem', marginBottom: 'var(--space-md)' }}>🪐</div>
-                        <p style={{ fontSize: '1rem', fontWeight: 600 }}>Antigravity Mobile Connect</p>
-                        <p style={{ fontSize: '0.85rem', marginTop: 'var(--space-sm)' }}>
-                            Send a message to start a conversation with your agent.
-                        </p>
+            {/* Tab Content */}
+            <div className="tab-content">
+                {activeTab === 'chat' && (
+                    <>
+                        <ChatView
+                            messages={messages}
+                            streamingContent={streamingContent}
+                            onOpenArtifact={handleOpenArtifact}
+                        />
+                        <CommandBar
+                            onSend={handleSend}
+                            onAction={handleAction}
+                            isConnected={isConnected}
+                            isStreaming={isStreaming}
+                            expandAll={expandAll}
+                            onToggleExpand={() => setExpandAll(!expandAll)}
+                            actionMode={actionMode}
+                            onActionModeChange={setActionMode}
+                        />
+                    </>
+                )}
+                {activeTab === 'changes' && <ReviewChanges />}
+                {activeTab === 'terminal' && (
+                    <div className="terminal-placeholder">
+                        <div style={{ fontSize: '2rem', marginBottom: 'var(--space-sm)' }}>💻</div>
+                        <p>Terminal output will appear here in a future phase.</p>
                     </div>
                 )}
-
-                {messages.map((msg, i) => (
-                    <div key={i} className={`message message--${msg.role}`}>
-                        <div className="message__content">{msg.content}</div>
-                    </div>
-                ))}
-                <div ref={messagesEnd} />
-            </div>
-
-            {/* Input Bar */}
-            <div className="chat-input-bar">
-                <input
-                    className="chat-input"
-                    type="text"
-                    placeholder={isConnected ? "Message your agent..." : "Reconnecting..."}
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    disabled={!isConnected && false}
-                />
-                <button
-                    className="chat-send-btn"
-                    onClick={handleSend}
-                    disabled={!input.trim()}
-                    title="Send"
-                >
-                    ➤
-                </button>
+                {activeTab === 'artifacts' && <ArtifactViewer artifacts={chatArtifacts} />}
             </div>
         </div>
     );

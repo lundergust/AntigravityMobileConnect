@@ -144,36 +144,50 @@ Add server dependencies:
 
 ---
 
-### Phase 1: Chat Interface (Core) [PENDING]
+### Phase 1: Chat Interface (Core) [COMPLETED]
 
 > **Deliverable:** Fully functional chat with streaming, command controls, artifact viewing, and review changes.
 
-#### [NEW] [ChatView.tsx](file:///c:/Users/Joe/Documents/AntigravityMobileConnect/mobile-ui/src/components/ChatView.tsx)
+*(See Phase 1 implementation plan artifact for details)*
 
-- WebSocket-backed streaming message display
-- Auto-scroll with "jump to bottom" FAB
-- Message bubbles with markdown rendering
-- Inline artifact previews (collapsible)
+#### Known Issues (Persistent)
+> [!WARNING]
+> The following UI bugs remain unresolved despite initial CSS/JS fixes:
+> 1. **Scroll on Refresh**: Chat view does not reliably scroll to the bottom on load/refresh.
+> 2. **Zoom Behavior**: Disabling zoom via `viewport` meta tag is not respected on some mobile devices/browsers.
+> 3. **Toolbar Positioning**: "Send Message" toolbar floats instead of anchoring firmly to the bottom on some mobile viewports.
 
-#### [NEW] [CommandBar.tsx](file:///c:/Users/Joe/Documents/AntigravityMobileConnect/mobile-ui/src/components/CommandBar.tsx)
+---
 
-- Sticky bottom bar with: text input, send button
-- Action button row: **Run** (green), **Reject** (red), **Ask every time** dropdown
-- "Expand all" toggle
-- "Always prompt" / "Always proceed" dropdown
+### Phase 1.5: CDP Mirror (API-Key-Free Chat) [PENDING]
 
-#### [NEW] [ReviewChanges.tsx](file:///c:/Users/Joe/Documents/AntigravityMobileConnect/mobile-ui/src/components/ReviewChanges.tsx)
+> **Deliverable:** CDP-based chat mirroring from a running Antigravity desktop instance. No API key needed.
 
-- Diff viewer (mobile-optimized unified diff)
-- Approve / Reject buttons per file and batch
+#### [NEW] [cdp_client.py](file:///c:/Users/Joe/Documents/AntigravityMobileConnect/server/cdp_client.py)
 
-#### [MODIFY] [server/routes/chat.py](file:///c:/Users/Joe/Documents/AntigravityMobileConnect/server/routes/chat.py)
+Chrome DevTools Protocol client:
+- `discover_cdp()` — Scan ports 9222, 9000-9003 for Antigravity's CDP endpoint
+- `CDPConnection` — WebSocket connection to CDP with `Runtime.evaluate` support
+- `capture_snapshot()` — Inject JS to extract chat messages as structured JSON
+- `inject_message()` — Type into Antigravity's input and submit
+- `get_app_state()` / `stop_generation()` — Remote control helpers
 
-- `POST /api/chat/send` — Send message to agent
-- `WS /ws/chat` — Stream agent responses
-- `POST /api/chat/action` — Execute Run/Reject/expand commands
-- `GET /api/chat/changes` — Get pending changes for review
-- `POST /api/chat/changes/review` — Approve/reject changes
+#### [MODIFY] [bridge.py](file:///c:/Users/Joe/Documents/AntigravityMobileConnect/server/bridge.py)
+
+- Add `CDPBridge` class with 1s polling loop and hash-based delta detection
+- Route `chat_send` to CDP injection or AgentBridge fallback
+- Broadcast `snapshot_update` events when chat content changes
+
+#### [MODIFY] [app.py](file:///c:/Users/Joe/Documents/AntigravityMobileConnect/server/app.py)
+
+- CDP discovery on startup with fallback to AgentBridge
+- New WebSocket message types: `snapshot_update`, `cdp_status`
+- REST endpoints: `GET /api/cdp/status`, `POST /api/cdp/reconnect`
+
+#### [MODIFY] [ChatPage.tsx](file:///c:/Users/Joe/Documents/AntigravityMobileConnect/mobile-ui/src/pages/ChatPage.tsx) + [App.tsx](file:///c:/Users/Joe/Documents/AntigravityMobileConnect/mobile-ui/src/App.tsx)
+
+- Handle `snapshot_update` messages to render chat from desktop
+- Show CDP connection status in nav bar
 
 ---
 

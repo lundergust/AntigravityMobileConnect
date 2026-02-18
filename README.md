@@ -100,6 +100,7 @@ Scan the **QR code** printed in your terminal with your phone. No app installati
 | Feature | Description |
 | :--- | :--- |
 | **💬 Real-time Chat** | Low-latency WebSocket connection to your agent. |
+| **🖥️ CDP Mirroring** | **NEW:** Mirrors your desktop Antigravity session (via Chrome DevTools Protocol) without requiring an API key. |
 | **📜 History** | Auto-saves conversations. Browse, search, and delete old chats. |
 | **🤖 Agent Discovery** | Auto-detects available agents in your workspace. |
 | **🚀 Swarm Control** | Deploy agent swarms for complex tasks directly from the UI. |
@@ -124,11 +125,17 @@ Configuration is handled via command-line arguments and your existing `.env` fil
 ## 🗺️ Roadmap
 
 -   [x] **Phase 0**: Core Connectivity & UI Shell
--   [ ] **Phase 1**: Real-time Streaming Responses
+-   [x] **Phase 1**: Real-time Streaming Chat (Core functionality working, UI polish ongoing)
+-   [x] **Phase 1.5**: CDP Mirroring (No-API-Key Mode)
 -   [ ] **Phase 2**: Live Workspace & Model Switching
 -   [ ] **Phase 3**: Advanced Chat History Management
 -   [ ] **Phase 4**: Agent Deployment UI
 -   [ ] **Phase 5**: Real Metrics Integration
+
+### Known Issues
+-   Mobile Safari/Chrome: Chat scroll position on load may act erratically.
+-   Mobile Viewport: Zoom disable may not be respected on all devices.
+-   Mobile Layout: Message toolbar may float on some screens.
 
 ---
 

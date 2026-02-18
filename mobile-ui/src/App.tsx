@@ -5,13 +5,10 @@ import AgentsPage from './pages/AgentsPage';
 import QuotaPage from './pages/QuotaPage';
 import SettingsPage from './pages/SettingsPage';
 import HistoryPage from './pages/HistoryPage';
+import type { ChatMessage } from './components/ChatView';
 
 type Page = 'chat' | 'history' | 'agents' | 'quota' | 'settings';
 
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
 
 const NAV_ITEMS: { id: Page; icon: string; label: string }[] = [
   { id: 'chat', icon: '💬', label: 'Chat' },
@@ -28,7 +25,7 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('chat');
   const [loadedMessages, setLoadedMessages] = useState<ChatMessage[]>([]);
   const [loadedTitle, setLoadedTitle] = useState('');
-  const { isConnected } = useWebSocket();
+  const { isConnected, cdpConnected } = useWebSocket();
 
   const handleOpenChat = (messages: ChatMessage[], title: string) => {
     setLoadedMessages(messages);
@@ -72,9 +69,15 @@ export default function App() {
         </div>
         <div className="top-nav__status">
           <span
-            className={`status-dot ${isConnected ? 'status-dot--connected' : 'status-dot--disconnected'}`}
+            className={`status-dot ${isConnected ? (cdpConnected ? 'status-dot--connected' : 'status-dot--warning') : 'status-dot--disconnected'}`}
           />
-          <span>{isConnected ? 'Connected' : 'Offline'}</span>
+          <span>
+            {!isConnected
+              ? 'Offline'
+              : cdpConnected
+                ? 'Antigravity'
+                : 'Agent Mode'}
+          </span>
         </div>
       </nav>
 

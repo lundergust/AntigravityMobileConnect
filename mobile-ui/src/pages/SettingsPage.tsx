@@ -107,7 +107,7 @@ export default function SettingsPage() {
                     Antigravity Mobile Connect
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 'var(--space-xs)' }}>
-                    v0.1.0 · Phase 0 Foundation
+                    v0.1.1-FIXED · Phase 1 Refinement
                 </div>
             </div>
         </div>

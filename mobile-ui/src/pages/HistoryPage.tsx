@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useApi } from '../hooks/useApi';
+import type { ChatMessage } from '../components/ChatView';
 
 interface Conversation {
     id: string;
@@ -7,11 +8,6 @@ interface Conversation {
     created_at: string;
     message_count: number;
     preview: string;
-}
-
-interface ChatMessage {
-    role: 'user' | 'assistant';
-    content: string;
 }
 
 interface HistoryPageProps {
@@ -46,8 +42,13 @@ export default function HistoryPage({ onOpenChat }: HistoryPageProps) {
 
     const handleOpen = async (id: string) => {
         try {
-            const data = await api.get<{ title: string; messages: ChatMessage[] }>(`/history/${id}`);
-            onOpenChat(data.messages, data.title);
+            const data = await api.get<{ title: string; messages: Array<{ role: 'user' | 'assistant'; content: string }> }>(`/history/${id}`);
+            // Add IDs to loaded messages to satisfy ChatMessage interface
+            const messagesWithIds: ChatMessage[] = data.messages.map((m, i) => ({
+                ...m,
+                id: `hist-${id}-${i}`,
+            }));
+            onOpenChat(messagesWithIds, data.title);
         } catch {
             // Failed to load
         }
